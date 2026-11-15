@@ -43,7 +43,8 @@ extend-exclude = [".venv", "evidence", "docs", "*.md"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "PL"]
 ignore = [
-    "PLR0913",  # many-argument constructors for Docker configs are explicit by design
+    "PLR0913",  # many-argument constructors (Docker configs, DI) are explicit by design
+    "PLR0917",  # same: dependency-injection constructors take several positionals
     "PLR2004",  # magic numbers are protocol constants (TLS/DNS) in parsers
     "PLR0911",
     "PLR0912",
@@ -71,7 +72,7 @@ warn_unreachable = true
 packages = ["bletiner"]
 
 [[tool.mypy.overrides]]
-module = ["docker", "docker.*", "dnslib", "dnslib.*"]
+module = ["docker", "docker.*", "dnslib", "dnslib.*", "keyring", "keyring.*", "PySide6", "PySide6.*", "qasync", "jinja2", "jinja2.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
