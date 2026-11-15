@@ -37,8 +37,10 @@ class TestReconcile:
     def test_sweep_unlabelled_and_unknown_containers(self) -> None:
         d = reconcile(
             {},
-            {"c1": ContainerInfo(None, "running", "running"),
-             "c2": ContainerInfo("ghost", "running", "running")},
+            {
+                "c1": ContainerInfo(None, "running", "running"),
+                "c2": ContainerInfo("ghost", "running", "running"),
+            },
         )
         assert [x.action for x in d] == [ReconcileAction.SWEEP_ORPHAN, ReconcileAction.SWEEP_ORPHAN]
 
