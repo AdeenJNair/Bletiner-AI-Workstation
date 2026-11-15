@@ -14,13 +14,13 @@ dependencies = [
     "docker>=7.1,<8",
     "aiosqlite>=0.20",
     "dnslib==0.9.24",
+    "jinja2>=3.1,<4",
 ]
 
 [project.optional-dependencies]
 # Phase 5+ only. Kept optional so Phases 0-3 do not pull a ~500 MB Qt toolchain.
 ui = ["pyside6>=6.7", "qasync>=0.27"]
 secrets = ["keyring>=25"]
-reporting = ["jinja2>=3.1"]
 dev = [
     "pytest>=8",
     "pytest-asyncio>=0.23",
@@ -72,7 +72,7 @@ warn_unreachable = true
 packages = ["bletiner"]
 
 [[tool.mypy.overrides]]
-module = ["docker", "docker.*", "dnslib", "dnslib.*", "keyring", "keyring.*", "PySide6", "PySide6.*", "qasync", "jinja2", "jinja2.*"]
+module = ["docker", "docker.*", "dnslib", "dnslib.*", "keyring", "keyring.*", "PySide6", "PySide6.*", "qasync"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
