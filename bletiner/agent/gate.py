@@ -26,18 +26,24 @@ def _load(path: Path) -> dict[str, object] | None:
     return dict(data) if isinstance(data, dict) else None
 
 
+_MISSING_TS_SENTINEL = "￿"  # sorts after any ISO-8601 timestamp, so a report with no valid
+#                                  generated_at is treated as newest and can never be silently hidden
+#                                  behind an older valid report (keeps selection fail-closed).
+
+
 def _recency(path: Path, report: dict[str, object]) -> tuple[str, float]:
     """Sort key: the report's own ``generated_at`` (authoritative), then file mtime as a tie-break.
 
     Filenames are NOT used (a lexically-later ``gate3_not-run_*`` must never shadow a genuine later
-    ``gate3_live_*`` pass — audit finding).
+    ``gate3_live_*`` pass — audit finding). A report lacking a valid ``generated_at`` sorts as newest, so a
+    malformed report surfaces for the (unchanged) content checks rather than being ignored.
     """
     ts = report.get("generated_at")
     try:
         mtime = path.stat().st_mtime
     except OSError:
         mtime = 0.0
-    return (str(ts) if isinstance(ts, str) else "", mtime)
+    return (str(ts) if isinstance(ts, str) and ts else _MISSING_TS_SENTINEL, mtime)
 
 
 def latest_report(evidence_dir: Path = DEFAULT_EVIDENCE_DIR) -> dict[str, object] | None:

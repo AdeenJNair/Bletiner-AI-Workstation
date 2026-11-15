@@ -87,3 +87,7 @@ class ReportContext:
 
     def safe_primary_target(self) -> str:
         return sanitize(self.primary_target)
+
+    def safe_scope(self) -> tuple[str, ...]:
+        """Authorized scope entries, secret-sanitized for completeness (same path in both report formats)."""
+        return tuple(sanitize(s) for s in self.authorized_scope)

@@ -19,7 +19,7 @@ def build_markdown(ctx: ReportContext) -> str:
         f"# {_md(ctx.safe_title())}",
         "",
         f"- **Primary target:** `{_md(ctx.safe_primary_target())}`",
-        f"- **Authorized scope:** {', '.join(f'`{_md(s)}`' for s in ctx.authorized_scope) or 'n/a'}",
+        f"- **Authorized scope:** {', '.join(f'`{_md(s)}`' for s in ctx.safe_scope()) or 'n/a'}",
         f"- **Generated:** {ctx.generated_at.isoformat()}",
         "",
         "## Summary",

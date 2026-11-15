@@ -160,6 +160,31 @@ class TestGate3Guard:
         )
         assert is_gate3_certified(tmp_path)  # the newer live pass wins by generated_at
 
+    def test_malformed_report_without_timestamp_is_not_hidden(self, tmp_path: Path) -> None:
+        # Hardening: a not-run report lacking generated_at must not be silently hidden behind an
+        # older valid live pass; it sorts as newest and blocks (fail-closed).
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        (tmp_path / "gate3_live_old.json").write_text(
+            json.dumps(
+                {
+                    "mode": "live",
+                    "gate_passed": True,
+                    "generated_at": "2026-01-01T00:00:00+00:00",
+                    "totals": {"total": 23, "pass": 23, "fail": 0, "not_run": 0},
+                }
+            )
+        )
+        (tmp_path / "gate3_not-run_new.json").write_text(
+            json.dumps(
+                {
+                    "mode": "not-run",
+                    "gate_passed": False,
+                    "totals": {"total": 23, "pass": 0, "fail": 0, "not_run": 23},
+                }
+            )
+        )
+        assert not is_gate3_certified(tmp_path)
+
     def test_newer_notrun_does_block_a_stale_live(self, tmp_path: Path) -> None:
         tmp_path.mkdir(parents=True, exist_ok=True)
         (tmp_path / "gate3_live_a.json").write_text(

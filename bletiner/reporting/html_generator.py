@@ -37,7 +37,7 @@ pre { white-space: pre-wrap; word-break: break-word; }
 <h1>{{ title }}</h1>
 <p class="meta">Target <code>{{ primary_target }}</code>
  &bull; generated {{ ctx.generated_at.isoformat() }}</p>
-<p class="meta">Authorized scope: {% for s in ctx.authorized_scope %}<code>{{ s }}</code> {% endfor %}</p>
+<p class="meta">Authorized scope: {% for s in scope %}<code>{{ s }}</code> {% endfor %}</p>
 <h2>Summary</h2>
 <table><tr><th>Severity</th><th>Count</th></tr>
 {% for sev in severities %}<tr><td class="sev-{{ sev }}">{{ sev }}</td><td>{{ counts[sev] }}</td></tr>
@@ -70,6 +70,7 @@ def build_html(ctx: ReportContext) -> str:
         ctx=ctx,
         title=ctx.safe_title(),
         primary_target=ctx.safe_primary_target(),
+        scope=ctx.safe_scope(),
         # Trusted module constant, never user input; render the policy verbatim.
         csp=Markup(CSP),  # noqa: S704
         severities=("CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"),
