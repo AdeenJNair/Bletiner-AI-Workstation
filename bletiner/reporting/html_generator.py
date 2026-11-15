@@ -11,7 +11,6 @@ from jinja2 import Environment, select_autoescape
 from markupsafe import Markup
 
 from bletiner.reporting.model import ReportContext
-from bletiner.reporting.sanitizer import sanitize
 
 CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'"
 
@@ -21,7 +20,7 @@ _TEMPLATE = """<!doctype html>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="{{ csp }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ ctx.title }}</title>
+<title>{{ title }}</title>
 <style>
 :root { color-scheme: light dark; }
 body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; line-height: 1.5; }
@@ -35,8 +34,8 @@ pre { white-space: pre-wrap; word-break: break-word; }
 </style>
 </head>
 <body>
-<h1>{{ ctx.title }}</h1>
-<p class="meta">Target <code>{{ ctx.primary_target }}</code>
+<h1>{{ title }}</h1>
+<p class="meta">Target <code>{{ primary_target }}</code>
  &bull; generated {{ ctx.generated_at.isoformat() }}</p>
 <p class="meta">Authorized scope: {% for s in ctx.authorized_scope %}<code>{{ s }}</code> {% endfor %}</p>
 <h2>Summary</h2>
@@ -52,7 +51,7 @@ pre { white-space: pre-wrap; word-break: break-word; }
  &bull; confidence {{ f.confidence.value }} &bull; status {{ f.verification_status.value }}</p>
 <p>Asset: <code>{{ f.affected_asset }}{% if f.affected_port %}:{{ f.affected_port }}{% endif %}</code>
  &bull; {{ f.category }} &bull; {{ f.detection_method }}</p>
-<pre>{{ summaries[f.finding_id] }}</pre>
+<pre>{{ f.summary }}</pre>
 {% if f.impact_statement %}<p><strong>Impact:</strong> {{ f.impact_statement }}</p>{% endif %}
 {% if f.remediation_guidance %}<p><strong>Remediation:</strong> {{ f.remediation_guidance }}</p>{% endif %}
 </div>
@@ -65,13 +64,15 @@ pre { white-space: pre-wrap; word-break: break-word; }
 def build_html(ctx: ReportContext) -> str:
     env = Environment(autoescape=select_autoescape(default=True, default_for_string=True))
     template = env.from_string(_TEMPLATE)
-    findings = ctx.reportable()
+    # Every field comes from safe_reportable()/safe_* and is already secret-sanitized; autoescape then
+    # neutralizes markup. Both layers apply to ALL fields, not just the summary.
     return template.render(
         ctx=ctx,
+        title=ctx.safe_title(),
+        primary_target=ctx.safe_primary_target(),
         # Trusted module constant, never user input; render the policy verbatim.
         csp=Markup(CSP),  # noqa: S704
         severities=("CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"),
         counts=ctx.severity_counts(),
-        findings=findings,
-        summaries={f.finding_id: sanitize(f.summary) for f in findings},
+        findings=ctx.safe_reportable(),
     )

@@ -18,16 +18,40 @@ from bletiner.models.errors import PoCVerificationFailedError
 DEFAULT_EVIDENCE_DIR = Path("evidence/phase3")
 
 
-def latest_report(evidence_dir: Path = DEFAULT_EVIDENCE_DIR) -> dict[str, object] | None:
-    if not evidence_dir.is_dir():
-        return None
-    reports = sorted(evidence_dir.glob("gate3_*.json"))
-    if not reports:
-        return None
+def _load(path: Path) -> dict[str, object] | None:
     try:
-        return dict(json.loads(reports[-1].read_text()))
+        data = json.loads(path.read_text())
     except (OSError, json.JSONDecodeError):
         return None
+    return dict(data) if isinstance(data, dict) else None
+
+
+def _recency(path: Path, report: dict[str, object]) -> tuple[str, float]:
+    """Sort key: the report's own ``generated_at`` (authoritative), then file mtime as a tie-break.
+
+    Filenames are NOT used (a lexically-later ``gate3_not-run_*`` must never shadow a genuine later
+    ``gate3_live_*`` pass — audit finding).
+    """
+    ts = report.get("generated_at")
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        mtime = 0.0
+    return (str(ts) if isinstance(ts, str) else "", mtime)
+
+
+def latest_report(evidence_dir: Path = DEFAULT_EVIDENCE_DIR) -> dict[str, object] | None:
+    """Return the most recent gate report by ``generated_at`` (then mtime), never by filename order."""
+    if not evidence_dir.is_dir():
+        return None
+    candidates: list[tuple[tuple[str, float], dict[str, object]]] = []
+    for path in evidence_dir.glob("gate3_*.json"):
+        report = _load(path)
+        if report is not None:
+            candidates.append((_recency(path, report), report))
+    if not candidates:
+        return None
+    return max(candidates, key=lambda c: c[0])[1]
 
 
 def is_gate3_certified(evidence_dir: Path = DEFAULT_EVIDENCE_DIR) -> bool:

@@ -135,6 +135,55 @@ class TestGate3Guard:
         assert is_gate3_certified(tmp_path)
         require_gate3_certified(tmp_path)  # does not raise
 
+    def test_newer_live_pass_not_shadowed_by_lexically_later_notrun(self, tmp_path: Path) -> None:
+        # Audit fix: a stale 'not-run' file whose NAME sorts after the live one must not block certification.
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        (tmp_path / "gate3_live_20260101T000000Z.json").write_text(
+            json.dumps(
+                {
+                    "mode": "live",
+                    "gate_passed": True,
+                    "generated_at": "2026-02-01T00:00:00+00:00",
+                    "totals": {"total": 23, "pass": 23, "fail": 0, "not_run": 0},
+                }
+            )
+        )
+        (tmp_path / "gate3_not-run_20260101T000000Z.json").write_text(
+            json.dumps(
+                {
+                    "mode": "not-run",
+                    "gate_passed": False,
+                    "generated_at": "2026-01-01T00:00:00+00:00",
+                    "totals": {"total": 23, "pass": 0, "fail": 0, "not_run": 23},
+                }
+            )
+        )
+        assert is_gate3_certified(tmp_path)  # the newer live pass wins by generated_at
+
+    def test_newer_notrun_does_block_a_stale_live(self, tmp_path: Path) -> None:
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        (tmp_path / "gate3_live_a.json").write_text(
+            json.dumps(
+                {
+                    "mode": "live",
+                    "gate_passed": True,
+                    "generated_at": "2026-01-01T00:00:00+00:00",
+                    "totals": {"total": 23, "pass": 23, "fail": 0, "not_run": 0},
+                }
+            )
+        )
+        (tmp_path / "gate3_not-run_b.json").write_text(
+            json.dumps(
+                {
+                    "mode": "not-run",
+                    "gate_passed": False,
+                    "generated_at": "2026-02-01T00:00:00+00:00",
+                    "totals": {"total": 23, "pass": 0, "fail": 0, "not_run": 23},
+                }
+            )
+        )
+        assert not is_gate3_certified(tmp_path)  # a genuinely newer not-run reflects current reality
+
 
 # --- agent loop ------------------------------------------------------------------------------------------
 class TestAgentLoop:

@@ -52,7 +52,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "S104", "S108", "PLC0415", "E501", "F841", "RUF043"]
+"tests/**" = ["S101", "S104", "S105", "S108", "PLC0415", "E501", "F841", "RUF043"]
 # The PoC harness provisions a throwaway lab and drives it live; it deliberately uses argv subprocesses,
 # local imports (to stay import-safe when Docker is absent), broad excepts, and lab temp paths.
 "scripts/**" = ["S603", "S607", "S604", "T201", "PLC0415", "S108", "SIM105", "PLR0917", "F841", "S112", "E501", "BLE001"]

@@ -186,3 +186,23 @@ class TestReports:
         f = _finding(verification_status=VS.VERIFIED, summary="token sk-ABCDEF0123456789abcdef leaked")
         assert "sk-ABCDEF0123456789abcdef" not in build_markdown(self._ctx((f,)))
         assert "sk-ABCDEF0123456789abcdef" not in build_html(self._ctx((f,)))
+
+    @pytest.mark.parametrize("field", ["title", "impact_statement", "remediation_guidance", "affected_asset"])
+    def test_both_formats_redact_secret_in_every_field(self, field: str) -> None:
+        secret = "sk-ABCDEF0123456789abcdef"
+        f = _finding(verification_status=VS.VERIFIED, **{field: f"leak {secret} here"})
+        ctx = self._ctx((f,))
+        # Audit fix: HTML must redact the same fields Markdown does, not just the summary.
+        assert secret not in build_markdown(ctx)
+        assert secret not in build_html(ctx)
+
+    def test_title_and_target_redacted_in_both(self) -> None:
+        secret = "sk-ABCDEF0123456789abcdef"
+        ctx = ReportContext(
+            title=f"Report {secret}",
+            primary_target=f"host-{secret}",
+            authorized_scope=("local-lab.test",),
+            findings=(_finding(verification_status=VS.VERIFIED),),
+        )
+        assert secret not in build_markdown(ctx)
+        assert secret not in build_html(ctx)
