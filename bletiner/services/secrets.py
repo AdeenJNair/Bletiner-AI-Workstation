@@ -16,14 +16,15 @@ __all__ = ["REDACTED", "SecretStore", "redact"]
 class SecretStore:
     """Thin keyring wrapper with an in-memory fallback. Never logs or returns secrets in bulk."""
 
-    def __init__(self, service: str = "bletiner") -> None:
+    def __init__(self, service: str = "bletiner", *, use_keyring: bool = True) -> None:
         self._service = service
         self._mem: dict[str, str] = {}
         self._keyring: object | None = None
-        with suppress(Exception):  # keyring is an optional extra
-            import keyring  # noqa: PLC0415 - optional dependency probed at runtime
+        if use_keyring:
+            with suppress(Exception):  # keyring is an optional extra
+                import keyring  # noqa: PLC0415 - optional dependency probed at runtime
 
-            self._keyring = keyring
+                self._keyring = keyring
 
     @property
     def backend(self) -> str:
