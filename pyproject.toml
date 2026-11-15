@@ -62,6 +62,7 @@ ignore = [
 "bletiner/container/security.py" = ["S108"]
 "bletiner/storage/artifacts.py" = ["S103"]
 "bletiner/container/manager.py" = ["PLC0415"]
+"bletiner/ui/app.py" = ["PLC0415"]
 "bletiner/network/proxy.py" = ["S104"]
 "bletiner/network/dns_filter.py" = ["S104"]
 

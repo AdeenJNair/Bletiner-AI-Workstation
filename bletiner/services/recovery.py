@@ -2,7 +2,7 @@
 
 On launch the service compares Docker containers labelled ``com.bletiner.managed=true`` against the SQLite
 statuses and decides an action per session. The decision logic is pure (:func:`reconcile`) so it is fully
-unit-testable without a Docker daemon; the thin driver that lists containers and applies actions is layered on.
+unit-testable without Docker; the thin driver that lists containers and applies actions wraps it.
 """
 
 from __future__ import annotations
@@ -13,8 +13,9 @@ from enum import StrEnum
 from bletiner.models.entities import SessionStatus
 
 # Session statuses that mean "this session believed it was live".
-_RUNNING = frozenset({SessionStatus.RUNNING, SessionStatus.PAUSING, SessionStatus.RESUMING,
-                      SessionStatus.INITIALIZING})
+_RUNNING = frozenset(
+    {SessionStatus.RUNNING, SessionStatus.PAUSING, SessionStatus.RESUMING, SessionStatus.INITIALIZING}
+)
 # Statuses that mean the session is finished/abandoned; any surviving containers are orphans.
 _TERMINAL = frozenset({SessionStatus.COMPLETED, SessionStatus.STOPPED, SessionStatus.FAILED})
 _ALIVE_CONTAINER = frozenset({"running", "restarting", "created"})
@@ -57,20 +58,34 @@ def reconcile(
         info = containers.get(sid)
         if status in _RUNNING:
             if info is None:
-                decisions.append(ReconcileDecision(sid, ReconcileAction.MARK_INTERRUPTED,
-                                                   "session RUNNING but no containers found"))
+                decisions.append(
+                    ReconcileDecision(
+                        sid, ReconcileAction.MARK_INTERRUPTED, "session RUNNING but no containers found"
+                    )
+                )
             elif _both_alive(info):
                 decisions.append(ReconcileDecision(sid, ReconcileAction.REATTACH, "both containers alive"))
             else:
-                decisions.append(ReconcileDecision(sid, ReconcileAction.MARK_CRASHED,
-                                                   "a container is not alive under a running session"))
+                decisions.append(
+                    ReconcileDecision(
+                        sid, ReconcileAction.MARK_CRASHED, "a container is not alive under a running session"
+                    )
+                )
         elif status in _TERMINAL and info is not None:
-            decisions.append(ReconcileDecision(sid, ReconcileAction.SWEEP_ORPHAN,
-                                               f"containers survive a {status.value} session"))
+            decisions.append(
+                ReconcileDecision(
+                    sid, ReconcileAction.SWEEP_ORPHAN, f"containers survive a {status.value} session"
+                )
+            )
 
     # Containers whose session label matches no known session, or is unlabelled, are orphans to sweep.
     for cid, info in sorted(containers.items()):
         if info.session_id is None or info.session_id not in sessions:
-            decisions.append(ReconcileDecision(info.session_id, ReconcileAction.SWEEP_ORPHAN,
-                                               f"container set {cid} maps to no active session"))
+            decisions.append(
+                ReconcileDecision(
+                    info.session_id,
+                    ReconcileAction.SWEEP_ORPHAN,
+                    f"container set {cid} maps to no active session",
+                )
+            )
     return decisions
